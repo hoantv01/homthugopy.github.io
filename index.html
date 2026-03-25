@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hòm Thư Góp Ý Ẩn Danh</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f6; display: flex; justify-content: center; padding: 50px; }
+        .container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h2 { color: #333; text-align: center; margin-bottom: 20px; }
+        label { font-weight: bold; margin-top: 15px; display: block; color: #555; }
+        select, textarea, input[type="file"] { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        textarea { resize: vertical; height: 120px; }
+        button { margin-top: 20px; width: 100%; padding: 12px; background-color: #0056b3; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        button:hover { background-color: #004494; }
+        #status { margin-top: 15px; text-align: center; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Hòm Thư Góp Ý</h2>
+    <form id="feedbackForm">
+        <label for="department">Gửi đến Phòng/Ban:</label>
+        <select id="department" required>
+            <option value="">-- Chọn phòng ban --</option>
+            <option value="Hành chính - Quản trị">Phòng Hành chính - Quản trị</option>
+            <option value="Kế toán nhà nước">Phòng Kế toán nhà nước</option>
+            <option value="Kiểm soát chi">Phòng Kiểm soát chi</option>
+            <option value="Tổ chức cán bộ">Phòng Tổ chức cán bộ</option>
+            <option value="Tin học">Phòng Tin học</option>
+        </select>
+
+        <label for="message">Nội dung góp ý:</label>
+        <textarea id="message" placeholder="Nhập ý kiến của bạn một cách khách quan và chân thực nhất..." required></textarea>
+
+        <label for="imageUpload">Hình ảnh đính kèm (nếu có):</label>
+        <input type="file" id="imageUpload" accept="image/png, image/jpeg, image/jpg">
+
+        <button type="submit" id="submitBtn">Gửi Góp Ý (Ẩn danh)</button>
+        <div id="status"></div>
+    </form>
+</div>
+
+<script>
+    document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const btn = document.getElementById('submitBtn');
+        const status = document.getElementById('status');
+        btn.disabled = true;
+        btn.innerText = "Đang gửi...";
+        status.innerText = "";
+
+        const department = document.getElementById('department').value;
+        const message = document.getElementById('message').value;
+        const fileInput = document.getElementById('imageUpload').files[0];
+
+        // URL của Google Apps Script (Sẽ có ở bước sau)
+        const GAS_URL = "URL_WEB_APP_CỦA_BAN_SẼ_ĐIỀN_VÀO_ĐÂY";
+
+        let payload = {
+            phongBan: department,
+            noiDung: message,
+            fileName: "",
+            mimeType: "",
+            fileBase64: ""
+        };
+
+        // Hàm xử lý gửi data
+        const sendData = (data) => {
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                status.style.color = "green";
+                status.innerText = "Đã gửi góp ý thành công!";
+                document.getElementById('feedbackForm').reset();
+            })
+            .catch(error => {
+                status.style.color = "red";
+                status.innerText = "Có lỗi xảy ra, vui lòng thử lại.";
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerText = "Gửi Góp Ý (Ẩn danh)";
+            });
+        };
+
+        // Nếu có ảnh, chuyển ảnh thành Base64 trước khi gửi
+        if (fileInput) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                payload.fileBase64 = e.target.result.split("base64,")[1];
+                payload.fileName = fileInput.name;
+                payload.mimeType = fileInput.type;
+                sendData(payload);
+            };
+            reader.readAsDataURL(fileInput);
+        } else {
+            // Gửi luôn nếu không có ảnh
+            sendData(payload);
+        }
+    });
+</script>
+
+</body>
+</html>
